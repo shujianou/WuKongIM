@@ -1,15 +1,29 @@
-version: '3.1'
+version: '3.7'
 services:
-  wukongim:
-    image: wukongim/wukongim:v2
+  wukongim: # WuKongIM服务
+    image: registry.cn-shenzhen.aliyuncs.com/golfonline-cloud/golfonline-im:2.1.0-SNAPSHOT
+    environment:
+      - "WK_EXTERNAL_IP=${EXTERNAL_IP}" # 服务器外网ip
+    healthcheck:
+      test: "wget -q -Y off -O /dev/null http://localhost:5001/health > /dev/null 2>&1"
+      interval: 10s
+      timeout: 10s
+      retries: 3       
     restart: always
+    env_file:
+      - .env
     volumes:
-      - ~/wukongim:/root/wukongim
+      - ./wukongim_data:/root/wukongim # 数据挂载到物理机的目录
     ports:
       - 5001:5001 # http api 端口
       - 5100:5100 # tcp端口
       - 5200:5200 # websocket端口
-      - 5300:5300 # monitor端口
-      - 5172:5172 # monitor端口
-
-  
+      - 5300:5300 # 管理端端口
+      - 5172:5172 # demo端口
+      - 11110:11110 # 分布式节点通讯端口
+  prometheus:  # 监控服务
+    image: registry.cn-shanghai.aliyuncs.com/wukongim/prometheus:v2.53.1
+    volumes:
+      - "./prometheus.yml:/etc/prometheus/prometheus.yml"
+    ports:
+      - "9090:9090"

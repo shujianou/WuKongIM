@@ -1,5 +1,8 @@
 FROM golang:1.22 as build
 
+# 添加构建参数
+ARG CONFIG_DIR=config
+
 # ENV GOPROXY=https://goproxy.cn,direct
 ENV GO111MODULE=on
 
@@ -43,11 +46,12 @@ RUN GIT_COMMIT=$(git rev-parse HEAD) && \
     CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -extldflags '-static' -X main.Commit=$GIT_COMMIT -X main.CommitDate=$GIT_COMMIT_DATE -X main.Version=$GIT_VERSION -X main.TreeState=$GIT_TREE_STATE" -installsuffix cgo  -o app ./main.go
 
 FROM alpine as prod
+ARG CONFIG_DIR
 # Import the user and group files from the builder.
 COPY --from=build /etc/passwd /etc/passwd
 COPY --from=build /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 WORKDIR /home
 COPY --from=build /go/release/app /home
-COPY --from=build /go/release/config/wk.yaml /root/wukongim/wk.yaml
-ENTRYPOINT ["/home/app","--config=/root/wukongim/wk.yaml","--ignoreMissingConfig=true"]
+COPY --from=build /go/release/${CONFIG_DIR}/wk.yaml /home/wk.yaml
+ENTRYPOINT ["/home/app","--config=/home/wk.yaml","--ignoreMissingConfig=true"]

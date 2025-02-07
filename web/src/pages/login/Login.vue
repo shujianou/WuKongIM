@@ -42,7 +42,6 @@ const onLogin = () => {
         </div>
         <div class="flex flex-col items-center justify-center pt-10">
             <h1 class="text-[1.5rem] font-semibold">WuKongIM分布式管理系统</h1>
-            <div class="mt-4 text-gray-500">演示账号: guest 密码：guest</div>
             <div class="mt-10">
                 <input type="text" class="input border-gray-200 w-[20rem]" placeholder="用户名" v-model="username" >
             </div>

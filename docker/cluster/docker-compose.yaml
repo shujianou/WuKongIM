@@ -1,10 +1,7 @@
 version: '3.7'
 
 x-wukongim-common: &wukongim-common  # 公共配置
-    # image: registry.cn-shanghai.aliyuncs.com/wukongim/wukongim:v2.0.10-20241221-dev
-    build:
-      context: ../../
-      dockerfile: Dockerfile
+    image: registry.cn-shenzhen.aliyuncs.com/golfonline-cloud/golfonline-im:2.1.0-SNAPSHOT
     healthcheck:
       test: "wget -q -Y off -O /dev/null http://localhost:5001/health > /dev/null 2>&1"
       interval: 10s
@@ -19,9 +16,9 @@ services:
       - "WK_CLUSTER_NODEID=1001"  # 节点ID，必须数字
       - "WK_STRESS=true" # 是否开启压测
       - "WK_MODE=release" # 运行模式
-      - "WK_INTRANET_TCPADDR=127.0.0.1:15100"
-      - "WK_EXTERNAL_WSADDR=ws://127.0.0.1:15200"  # 节点对外WS地址， 这里IP视情况修改
-      - "WK_EXTERNAL_TCPADDR=127.0.0.1:15100" # 节点对外TCP地址， 这里IP视情况修改
+      - "WK_INTRANET_TCPADDR=10.0.0.197:15100"
+      - "WK_EXTERNAL_WSADDR=ws://119.23.54.248:15200"  # 节点对外WS地址， 这里IP视情况修改
+      - "WK_EXTERNAL_TCPADDR=119.23.54.248:15100" # 节点对外TCP地址， 这里IP视情况修改
       - "WK_CLUSTER_SERVERADDR=node1.wk.local:11110"
       - "WK_CLUSTER_INITNODES=1001@node1.wk.local 1002@node2.wk.local 1003@node3.wk.local" # 集群节点列表
       - "WK_CLUSTER_APIURL=http://node1.wk.local:5001" # 节点对外API地址
@@ -41,9 +38,9 @@ services:
       - "WK_CLUSTER_NODEID=1002"
       - "WK_STRESS=true" # 是否开启压测
       - "WK_MODE=release" # 运行模式
-      - "WK_INTRANET_TCPADDR=127.0.0.1:15100"
-      - "WK_EXTERNAL_WSADDR=ws://127.0.0.1:15200"  # 节点对外WS地址， 这里IP视情况修改
-      - "WK_EXTERNAL_TCPADDR=127.0.0.1:15100" # 节点对外TCP地址， 这里IP视情况修改
+      - "WK_INTRANET_TCPADDR=10.0.0.197:15100"
+      - "WK_EXTERNAL_WSADDR=ws://119.23.54.248:15200"  # 节点对外WS地址， 这里IP视情况修改
+      - "WK_EXTERNAL_TCPADDR=119.23.54.248:15100" # 节点对外TCP地址， 这里IP视情况修改
       - "WK_CLUSTER_SERVERADDR=node2.wk.local:11110"
       - "WK_CLUSTER_INITNODES=1001@node1.wk.local 1002@node2.wk.local 1003@node3.wk.local" # 集群节点列表
       - "WK_CLUSTER_APIURL=http://node2.wk.local:5001"
@@ -63,9 +60,9 @@ services:
       - "WK_CLUSTER_NODEID=1003"
       - "WK_STRESS=true" # 是否开启压测
       - "WK_MODE=release" # 运行模式
-      - "WK_INTRANET_TCPADDR=127.0.0.1:15100"
-      - "WK_EXTERNAL_WSADDR=ws://127.0.0.1:15200"  # 节点对外WS地址， 这里IP视情况修改
-      - "WK_EXTERNAL_TCPADDR=127.0.0.1:15100" # 节点对外TCP地址， 这里IP视情况修改
+      - "WK_INTRANET_TCPADDR=10.0.0.197:15100"
+      - "WK_EXTERNAL_WSADDR=ws://119.23.54.248:15200"  # 节点对外WS地址， 这里IP视情况修改
+      - "WK_EXTERNAL_TCPADDR=119.23.54.248:15100" # 节点对外TCP地址， 这里IP视情况修改
       - "WK_CLUSTER_SERVERADDR=node3.wk.local:11110"
       - "WK_CLUSTER_INITNODES=1001@node1.wk.local 1002@node2.wk.local 1003@node3.wk.local" # 集群节点列表
       - "WK_CLUSTER_APIURL=http://node3.wk.local:5001"
@@ -74,7 +71,14 @@ services:
         aliases:
         - node3.wk.local
     volumes:
-      - ./wukongim3_data:/root/wukongim  
+      - ./wukongim3_data:/root/wukongim
+  imweb:
+    image: registry.cn-shenzhen.aliyuncs.com/golfonline-cloud/golfonline-im-web:1.0.0-SNAPSHOT
+    restart: always
+    environment:
+      - API_URL=https://dev-api.greenjoyclub.com/im/biz
+    ports:
+      - "81:80" 
   prometheus: 
     image: registry.cn-shanghai.aliyuncs.com/wukongim/prometheus:v2.53.1
     volumes:
