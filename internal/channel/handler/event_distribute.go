@@ -124,14 +124,15 @@ func (h *Handler) distributeByTag(leaderId uint64, tag *types.Tag, channelId str
 			if options.G.IsSystemUid(uid) {
 				continue
 			}
-			if !h.isOnline(uid) {
-				continue
-			}
-			if !h.masterDeviceIsOnline(uid) {
+			isOnline, masterIsOnline := h.deviceOnlineStatus(uid)
+			if !masterIsOnline {
 				if offlineUids == nil {
 					offlineUids = make([]string, 0, len(node.Uids))
 				}
 				offlineUids = append(offlineUids, uid)
+			}
+			if !isOnline {
+				continue
 			}
 
 			for _, event := range events {
@@ -159,8 +160,16 @@ func (h *Handler) distributeByTag(leaderId uint64, tag *types.Tag, channelId str
 	if len(offlineUids) > 0 {
 		offlineEvents := make([]*eventbus.Event, 0, len(events))
 		for _, event := range events {
+			// 过滤发送者
+			filteredOfflineUids := make([]string, 0, len(offlineUids))
+			for _, offlineUid := range offlineUids {
+				if offlineUid != event.Conn.Uid {
+					filteredOfflineUids = append(filteredOfflineUids, offlineUid)
+				}
+			}
+
 			cloneEvent := event.Clone()
-			cloneEvent.OfflineUsers = offlineUids
+			cloneEvent.OfflineUsers = filteredOfflineUids
 			cloneEvent.Type = eventbus.EventPushOffline
 			offlineEvents = append(offlineEvents, cloneEvent)
 		}
@@ -187,6 +196,12 @@ func (h *Handler) getCommonTag(ctx *eventbus.ChannelContext) (*types.Tag, error)
 		return h.getOrMakeTagForLeader(ctx.ChannelId, ctx.ChannelType)
 	}
 	tagKey := ctx.Events[0].TagKey
+
+	// 判断当前的频道tag是否等于tagKey,如果不等于则删除旧的tag
+	oldTagKey := service.TagManager.GetChannelTag(ctx.ChannelId, ctx.ChannelType)
+	if oldTagKey != "" && oldTagKey != tagKey {
+		service.TagManager.RemoveTag(oldTagKey)
+	}
 	tag, err := h.commonService.GetOrRequestAndMakeTagWithLocal(ctx.ChannelId, ctx.ChannelType, tagKey)
 	if err != nil {
 		h.Error("processDiffuse: get tag failed", zap.Error(err), zap.String("fakeChannelId", ctx.ChannelId), zap.Uint8("channelType", ctx.ChannelType), zap.String("tagKey", tagKey))
@@ -339,4 +354,17 @@ func (h *Handler) masterDeviceIsOnline(uid string) bool {
 		}
 	}
 	return online
+}
+
+// 用户的设备在线状态
+func (h *Handler) deviceOnlineStatus(uid string) (bool, bool) {
+	toConns := eventbus.User.AuthedConnsByUid(uid)
+	masterIsOnline := false
+	for _, conn := range toConns {
+		if conn.DeviceLevel == wkproto.DeviceLevelMaster {
+			masterIsOnline = true
+			break
+		}
+	}
+	return len(toConns) > 0, masterIsOnline
 }
